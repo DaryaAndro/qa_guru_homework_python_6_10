@@ -1,42 +1,49 @@
 from selene import browser, have
 
+from demoqa_tests.data.users import User
 from tests.conftest import path
 
 
 class RegistrationPage:
 
+    def __init__(self):
+        self.fist_name = browser.element('#firstName')
+        self.last_name = browser.element('#lastName')
+        self.email = browser.element('#userEmail')
+        self.gender = browser.all('#genterWrapper .custom-control')
+        self.mobile_number = browser.element('#userNumber')
+        self.subject = browser.element('#subjectsInput')
+        self.hobbies = browser.all('label[for^= hobbies]')
+        self.select_picture = browser.element('#uploadPicture')
+
     def open(self):
         browser.open('/automation-practice-form')
 
-    def fill_first_name(self, value):
-        browser.element('#firstName').type(value)
+    def fill_registration(self, user: User):
+        self.fist_name.type(user.first_name)
+        self.last_name.type(user.last_name)
+        self.email.type(user.email)
+        self.gender.element_by(have.exact_text(user.gender)).click()
+        self.mobile_number.type(user.mobile_number)
+        self.fill_date_of_birth(user.date_of_birth)
+        self.subject.type(user.subjects).press_enter()
+        self.hobbies.element_by(have.text(user.hobbies)).click()
+        self.select_picture.send_keys(path(user.picture))
+        self.fill_current_address(user.current_address)
+        self.select_state(user.state)
+        self.select_city(user.city)
+        self.submit()
+        return self
 
-    def fill_date_of_birth(self, year, month, day):
+    def fill_date_of_birth(self, date):
+        year = date.year
+        month = date.month - 1
+        day = date.strftime('%d')
         browser.element('#dateOfBirthInput').click()
         browser.element('.react-datepicker__year-select').type(year)
         browser.element('.react-datepicker__month-select').type(month)
         browser.element(f'.react-datepicker__day--0{day}:not(.react-datepicker__day--outside-month').click()
-
-    def fill_last_name(self, value):
-        browser.element('#lastName').type(value)
-
-    def fill_email(self, value):
-        browser.element('#userEmail').type(value)
-
-    def select_gender(self, value):
-        browser.all('#genterWrapper .custom-control').element_by(have.exact_text(value)).click()
-
-    def fill_mobile_number(self, value):
-        browser.element('#userNumber').type(value)
-
-    def fill_subjects(self, value):
-        browser.element('#subjectsInput').type(value).press_enter()
-
-    def select_hobbies(self):
-        browser.element('[for=hobbies-checkbox-2]').click()
-
-    def select_picture(self, filename):
-        browser.element('#uploadPicture').send_keys(path(filename))
+        return self
 
     def fill_current_address(self, value):
         browser.element('#currentAddress').type(value)
@@ -52,22 +59,21 @@ class RegistrationPage:
     def submit(self):
         browser.element('#submit').press_enter()
 
-    def should_have_registered(self, full_name, email, gender, mobile_number, date_of_birth,
-                               subjects, hobbies, picture, current_address, state_and_city):
-        browser.element('.table').all('td').even.should(
-            have.exact_texts(
-                full_name,
-                email,
-                gender,
-                mobile_number,
-                date_of_birth,
-                subjects,
-                hobbies,
-                picture,
-                current_address,
-                state_and_city
-            )
-        )
+    def should_have_registered(self, user):
+        browser.element('.table').all('td').even.should(have.exact_texts(
+            f'{user.first_name} {user.last_name}',
+            f'{user.email}',
+            f'{user.gender}',
+            f'{user.mobile_number}',
+            '{0} {1},{2}'.format(user.date_of_birth.strftime("%d"),
+                                 user.date_of_birth.strftime("%B"),
+                                 user.date_of_birth.year),
+            f'{user.subjects}',
+            f'{user.hobbies}',
+            f'{user.picture}',
+            f'{user.current_address}',
+            f'{user.state} {user.city}'
+        ))
 
     def close_modal(self):
         browser.element('#closeLargeModal').should(have.exact_text('Close')).click()
